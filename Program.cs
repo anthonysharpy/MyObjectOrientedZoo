@@ -1,22 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 
-/* Written by Anthony Sharp 2021 
+/*  Written by Anthony Sharp 2021 
  
- Features:
+    Features:
 
-* Static classes
-* Constructors
-* Private members
-* Properties
-* Private setters
-* Passing class instances as function arguments
-* Class inheritance
-* Lists
-* Enums
-* Structs
+    * Static classes
+    * Constructors
+    * Private members
+    * Properties
+    * Private setters
+    * Passing class instances as function arguments
+    * Class inheritance
+    * Lists
+    * Enums
+    * Structs
+    * Abstract classes
+    * Abstract functions
+    * Override keyword
 
- */
+    NOTE: Some features have been ungracefully used (i.e. merely for the sake of using them). */
 
 namespace MyObjectOrientedZoo
 {
@@ -91,7 +94,7 @@ namespace MyObjectOrientedZoo
         }
     }
 
-    class LivingThing
+    abstract class LivingThing
     {
         public LivingThing()
         {
@@ -99,10 +102,17 @@ namespace MyObjectOrientedZoo
             dailycost = RandomNumbers.GetRandomInt(10000) / 100.0f;
         }
 
+        public abstract void DoSomethingDumb();
+
         public int uniqueid;
         public float chanceofgoingwrong; // 0-1.
         public bool didsomethingwrongtoday;
         public float dailycost; // negative if earns money
+    }
+
+    class Happiness
+    {
+        public int mood = 2;
     }
 
     class Animal:LivingThing
@@ -164,7 +174,7 @@ namespace MyObjectOrientedZoo
             didnteattoday = false;
         }
 
-        public void DoSomethingDumb()
+        override public void DoSomethingDumb()
         {
             string incidentdescription = "";
             didsomethingwrongtoday = true;
@@ -206,15 +216,17 @@ namespace MyObjectOrientedZoo
     class Staff:LivingThing
     {
         public string name;
+        private Zoo ourzoo;
 
-        public Staff(int theuniqueid)
+        public Staff(int theuniqueid, Zoo thezoo)
         {
             // Name.
             name = StaticData.GetRandomHumanName();
             uniqueid = theuniqueid;
+            ourzoo = thezoo;
         }
 
-        public void DoSomethingDumb(Zoo thezoo)
+        override public void DoSomethingDumb()
         {
             didsomethingwrongtoday = true;
             string incidentdescription = "";
@@ -230,28 +242,28 @@ namespace MyObjectOrientedZoo
                 case 0:
                     float money = RandomNumbers.GetRandomInt(10000) / 100.0f;
                     incidentdescription = name + " stole " + money.ToString("c2") + " from your zoo!";
-                    thezoo.bankbalance -= money;
+                    ourzoo.bankbalance -= money;
                     Program.totalchange -= money;
                     type = Zoo.Incident.IncidentType.StoleMoney;
                     break;
                 // Forgot to feed animal.
                 case 1:
-                    int animal = RandomNumbers.GetRandomInt(thezoo.animals.Count-1);
-                    if (thezoo.animals[animal].didnteattoday) goto begin;
-                    incidentdescription = name + " forgot to feed the " + thezoo.animals[animal].Name + "!";
-                    thezoo.animals[animal].MoodInt--;
+                    int animal = RandomNumbers.GetRandomInt(ourzoo.animals.Count-1);
+                    if (ourzoo.animals[animal].didnteattoday) goto begin;
+                    incidentdescription = name + " forgot to feed the " + ourzoo.animals[animal].Name + "!";
+                    ourzoo.animals[animal].MoodInt--;
                     type = Zoo.Incident.IncidentType.ForgotFeeding;
-                    animalinvoled = thezoo.animals[animal];
+                    animalinvoled = ourzoo.animals[animal];
                     break;
                 // Workplace-related incident.
                 case 2:
                     incidentdescription = name + " had a workplace accident and was killed instantly!";
-                    thezoo.KillStaff(this);
+                    ourzoo.KillStaff(this);
                     type = Zoo.Incident.IncidentType.Died;
                     break;
             }
 
-            thezoo.LogIncident(type, animalinvoled, this, incidentdescription);
+            ourzoo.LogIncident(type, animalinvoled, this, incidentdescription);
         }
     }
 
@@ -362,11 +374,11 @@ namespace MyObjectOrientedZoo
             }
         }
 
-        public void GiveStaff(int n)
+        public void GiveStaff(int n, Zoo thezoo)
         {
             for (int i = 0; i < n; i++)
             {
-                Staff s = new Staff(staffmembers.Count);
+                Staff s = new Staff(staffmembers.Count, thezoo);
                 staffmembers.Add(s);
                 Console.WriteLine(staffmembers[staffmembers.Count-1].name + " was hired for " + (staffmembers[staffmembers.Count - 1].dailycost/8.0f).ToString("c2") + " per hour");
             }
@@ -452,7 +464,7 @@ namespace MyObjectOrientedZoo
             }
 
             Console.WriteLine();
-            ourzoo.GiveStaff(numberofstaff);
+            ourzoo.GiveStaff(numberofstaff, ourzoo);
         }
 
         struct PlayerChoice
@@ -577,7 +589,7 @@ namespace MyObjectOrientedZoo
 
                 if (n <= ourzoo.staffmembers[i].chanceofgoingwrong)
                 {
-                    ourzoo.staffmembers[i].DoSomethingDumb(ourzoo);
+                    ourzoo.staffmembers[i].DoSomethingDumb();
                 }
             }
 
