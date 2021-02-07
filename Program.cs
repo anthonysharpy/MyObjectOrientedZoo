@@ -231,7 +231,7 @@ namespace MyObjectOrientedZoo
             didsomethingwrongtoday = true;
             string incidentdescription = "";
             Zoo.Incident.IncidentType type = 0;
-            Animal animalinvoled = null;
+            Animal animalinvolved = null;
 
             begin:
             int what = RandomNumbers.GetRandomInt(2);
@@ -251,9 +251,9 @@ namespace MyObjectOrientedZoo
                     int animal = RandomNumbers.GetRandomInt(ourzoo.animals.Count-1);
                     if (ourzoo.animals[animal].didnteattoday) goto begin;
                     incidentdescription = name + " forgot to feed the " + ourzoo.animals[animal].Name + "!";
+                    animalinvolved = ourzoo.animals[animal];
                     ourzoo.animals[animal].MoodInt--;
                     type = Zoo.Incident.IncidentType.ForgotFeeding;
-                    animalinvoled = ourzoo.animals[animal];
                     break;
                 // Workplace-related incident.
                 case 2:
@@ -263,7 +263,8 @@ namespace MyObjectOrientedZoo
                     break;
             }
 
-            ourzoo.LogIncident(type, animalinvoled, this, incidentdescription);
+            // Animal might be dead by this point.
+            if(animalinvolved != null) ourzoo.LogIncident(type, animalinvolved, this, incidentdescription);
         }
     }
 
@@ -374,11 +375,11 @@ namespace MyObjectOrientedZoo
             }
         }
 
-        public void GiveStaff(int n, Zoo thezoo)
+        public void GiveStaff(int n)
         {
             for (int i = 0; i < n; i++)
             {
-                Staff s = new Staff(staffmembers.Count, thezoo);
+                Staff s = new Staff(staffmembers.Count, this);
                 staffmembers.Add(s);
                 Console.WriteLine(staffmembers[staffmembers.Count-1].name + " was hired for " + (staffmembers[staffmembers.Count - 1].dailycost/8.0f).ToString("c2") + " per hour");
             }
@@ -434,37 +435,16 @@ namespace MyObjectOrientedZoo
 
         static void SetupAnimals()
         {
-            Console.WriteLine(ourzoo.name + "? That's a lovely name! And how many animals would " +
-               "you like your zoo to have (it's probably best to start-off small)?");
-
-            int numberofanimals;
-            int.TryParse(Console.ReadLine(), out numberofanimals);
-
-            while (numberofanimals < 1)
-            {
-                Console.WriteLine("Sorry I didn't quite catch that. Say again?");
-                int.TryParse(Console.ReadLine(), out numberofanimals);
-            }
-
+            Console.WriteLine(ourzoo.name + "? That's a lovely name! Now let me buy you some animals...");
             Console.WriteLine();
-            ourzoo.GiveAnimals(numberofanimals);
+            ourzoo.GiveAnimals(3);
         }
 
         static void SetupStaff()
         {
-            Console.WriteLine("Great! Now, how many staff members would you like to hire?");
-
-            int numberofstaff;
-            int.TryParse(Console.ReadLine(), out numberofstaff);
-
-            while (numberofstaff < 1)
-            {
-                Console.WriteLine("Sorry I didn't quite catch that. Say again?");
-                int.TryParse(Console.ReadLine(), out numberofstaff);
-            }
-
+            Console.WriteLine("Great! Now ... have some staff!");
             Console.WriteLine();
-            ourzoo.GiveStaff(numberofstaff, ourzoo);
+            ourzoo.GiveStaff(3);
         }
 
         struct PlayerChoice
@@ -482,7 +462,9 @@ namespace MyObjectOrientedZoo
                 PutDown,
                 Fire,
                 Nothing,
-                GiveMedicine
+                GiveMedicine,
+                HireStaff,
+                BuyAnimal
             }
 
             public ChoiceType type;
@@ -536,6 +518,10 @@ namespace MyObjectOrientedZoo
                 num++;
             }
 
+            choices.Add(new PlayerChoice(num + ") Hire one more member of staff", PlayerChoice.ChoiceType.HireStaff));
+            num++;
+            choices.Add(new PlayerChoice(num + ") Buy one more animal", PlayerChoice.ChoiceType.BuyAnimal));
+            num++;
             choices.Add(new PlayerChoice(num + ") Do nothing", PlayerChoice.ChoiceType.Nothing));
 
             return choices;
@@ -570,6 +556,12 @@ namespace MyObjectOrientedZoo
                     break;
                 case PlayerChoice.ChoiceType.Nothing:
                     Console.WriteLine("You did nothing today.");
+                    break;
+                case PlayerChoice.ChoiceType.HireStaff:
+                    ourzoo.GiveStaff(1);
+                    break;
+                case PlayerChoice.ChoiceType.BuyAnimal:
+                    ourzoo.GiveAnimals(1);
                     break;
             }
         }
@@ -636,6 +628,14 @@ namespace MyObjectOrientedZoo
             return choice;
         }
 
+        static void ShowStats()
+        {
+            Console.WriteLine("Bank balance: " + ourzoo.bankbalance.ToString("c2"));
+            Console.WriteLine("Number of animals: " + ourzoo.NumberOfAnimals);
+            Console.WriteLine("Number of staff: " + ourzoo.NumberOfStaff);
+            Console.WriteLine("------------------------");
+        }
+
         static void DoGameLoop()
         {
             totalchange = 0.0f;
@@ -644,10 +644,8 @@ namespace MyObjectOrientedZoo
 
             Console.WriteLine("Day " + day + " at " + ourzoo.name);
             Console.WriteLine("------------------------");
-            Console.WriteLine("Bank balance: " + ourzoo.bankbalance.ToString("c2"));
-            Console.WriteLine("Number of animals: " + ourzoo.NumberOfAnimals);
-            Console.WriteLine("Number of staff: " + ourzoo.NumberOfStaff);
-            Console.WriteLine("------------------------");
+
+            ShowStats();
 
             // Reset what happened yesterday.
             ResetAll();
@@ -662,6 +660,8 @@ namespace MyObjectOrientedZoo
             DescribeDay();
 
             Console.WriteLine("------------------------");
+
+            ShowStats();
 
             // Give player choices.
             Console.WriteLine("What do you want to do today?");
